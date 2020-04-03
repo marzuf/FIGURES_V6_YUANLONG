@@ -1,0 +1,135 @@
+# Rscript n_fcc_over_qtile_randommidposstrict_iterate.R
+
+outFolder <- "N_FCC_OVER_QTILE_RANDOMMIDPOSSTRICT_ITERATE"
+dir.create(outFolder)
+
+
+plotType <- "svg"
+myHeight <- 7
+myWidth <- 10
+plotCex <- 1.4
+
+source("../Cancer_HiC_data_TAD_DA/utils_fct.R")
+source("../Yuanlong_Cancer_HiC_data_TAD_DA/subtype_cols.R")
+source("../FIGURES_V2_YUANLONG/settings.R")
+
+require(foreach)
+require(doMC)
+require(ggplot2)
+registerDoMC(40)
+require(ggpubr)
+
+
+buildData <- TRUE
+
+all_fccThresh <- seq(from = -1, to = 1, by = 0.05)
+
+
+
+rd_type <- "RANDOMMIDPOSSTRICT"
+
+if(buildData){
+  hicds = all_hicds[1]
+  hicds = all_hicds[2]
+  all_fcc_dt <- foreach(hicds = all_hicds, .combine='rbind') %dopar% {
+    exprds = all_exprds[[paste0(hicds)]][1]
+    hicds_dt <- foreach(exprds = all_exprds[[paste0(hicds)]], .combine='rbind') %do% {
+      
+      cat("... start ", hicds, " - ", exprds, " \n")
+      
+      rd_file <- file.path("../v2_Yuanlong_Cancer_HiC_data_TAD_DA/PIPELINE/OUTPUT_FOLDER", gsub("_40kb", "_RANDOMMIDPOSSTRICT_40kb", hicds), exprds, "8cOnlyFCC_runAllDown/all_obs_prodSignedRatio.Rdata")
+      rd_fcc <- get(load(rd_file))
+      
+      fccFile <- file.path("../v2_Yuanlong_Cancer_HiC_data_TAD_DA/PIPELINE/OUTPUT_FOLDER", hicds, exprds, "8cOnlyFCC_runAllDown/all_obs_prodSignedRatio.Rdata")
+      obs_fcc <- get(load(fccFile))
+      
+     dt1 <- data.frame(
+        hicds=hicds,
+        exprds=exprds,
+        fcc_type="random",
+        fcc_value = rd_fcc,
+        stringsAsFactors = FALSE
+      )
+     dt2 <- data.frame(
+       hicds=hicds,
+       exprds=exprds,
+       fcc_type="observed",
+       fcc_value = as.numeric(obs_fcc),
+       stringsAsFactors = FALSE
+     )
+     rbind(dt1,dt2)
+    }
+    hicds_dt
+  }
+  outFile <- file.path(outFolder, "all_fcc_dt.Rdata")
+  save(all_fcc_dt, file=outFile, version=2)
+  cat(paste0("... written: ", outFile, "\n"))
+} else {
+  outFile <- file.path(outFolder, "all_fcc_dt.Rdata")
+  all_fcc_dt <- get(load(outFile))
+}
+
+all_fcc_dt$dataset <- file.path(all_fcc_dt$hicds, all_fcc_dt$exprds)
+
+ds = unique(all_fcc_dt$dataset)[1]
+nOverThresh_dt <- foreach(fccThresh = all_fccThresh, .combine='rbind') %dopar% {
+  
+  ds_dt <- foreach(ds = unique(all_fcc_dt$dataset), .combine='rbind') %dopar% {
+  curr_dt <- all_fcc_dt[all_fcc_dt$dataset == ds,]
+
+    nObs <- sum(curr_dt$fcc_type == "observed")
+  nRd <- sum(curr_dt$fcc_type == "random")
+  nOverThresh_obs <-   sum(curr_dt$fcc_value[curr_dt$fcc_type == "observed"] >= fccThresh )
+  nOverThresh_rd <-   sum(curr_dt$fcc_value[curr_dt$fcc_type == "random"] >= fccThresh )
+
+    data.frame(
+    hicds=dirname(ds),
+    exprds=basename(ds),
+    fccThresh = fccThresh,
+    ratioOverThresh_obs = nOverThresh_obs/nObs,
+    ratioOverThresh_rd = nOverThresh_rd/nRd,
+      stringsAsFactors = FALSE
+  )
+  }
+  ds_dt
+}
+outFile <- file.path(outFolder, "nOverThresh_dt.Rdata")
+save(nOverThresh_dt, file=outFile, version=2)
+cat(paste0("... written: ", outFile, "\n"))
+
+
+# load("N_FCC_OVER_QTILE_V2_EITHER_ITERATE/nOverThresh_dt.Rdata")
+
+nOverThresh_dt$obs_over_rd <- nOverThresh_dt$ratioOverThresh_obs/nOverThresh_dt$ratioOverThresh_rd
+
+box_p <- ggboxplot(data = nOverThresh_dt,
+                   x = "fccThresh", y = "obs_over_rd",
+                   xlab="FCC threshold", ylab="Ratio TADs FCC >= thresh. obs/permut",
+                   title = paste0(rd_type)
+)
+outFile <- file.path(outFolder, paste0("ratioObsPermut_overThresh_boxplot.", plotType))
+ggsave(box_p, file=outFile, height=myHeightGG, width=myWidthGG)
+cat(paste0("... written: ", outFile, "\n"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
