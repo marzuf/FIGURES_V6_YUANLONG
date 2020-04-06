@@ -17,6 +17,10 @@ startTime <- Sys.time()
 # Rscript fcc_wave_plot_rescaled.R GSE105381_HepG2_40kb TCGAlihc_wt_mutCTNNB1
 # Rscript fcc_wave_plot_rescaled.R ENCSR312KHQ_SK-MEL-5_40kb TCGAskcm_lowInf_highInf
 
+# Rscript fcc_wave_plot_rescaled.R GSE109229_BT474_40kb TCGAbrca_lum_bas
+
+# Rscript fcc_wave_plot_rescaled.R K562_40kb TCGAlaml_wt_mutFLT3
+
 ################################################################################
 
 SSHFS <- F

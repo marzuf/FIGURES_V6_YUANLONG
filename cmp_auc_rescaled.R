@@ -4,14 +4,14 @@ outFolder <- "CMP_AUC_RESCALED"
 dir.create(outFolder)
 
 
-plotType <- "png"
+plotType <- "svg"
 myHeightGG <- 7
 myWidthGG <- 9
 plotCex <- 1.4
 
-# source("../Cancer_HiC_data_TAD_DA/utils_fct.R")
-# source("../Yuanlong_Cancer_HiC_data_TAD_DA/subtype_cols.R")
-# source("../FIGURES_V2_YUANLONG/settings.R")
+source("../Cancer_HiC_data_TAD_DA/utils_fct.R")
+source("../Yuanlong_Cancer_HiC_data_TAD_DA/subtype_cols.R")
+source("../FIGURES_V2_YUANLONG/settings.R")
 
 
 require(foreach)
@@ -83,4 +83,40 @@ if(buildTable){
 }
 
 
+all_auc_dt$cmp <- all_cols[all_cmps[paste0(all_auc_dt$exprds)]]
+
+outFile <- file.path(outFolder, paste0("auc_ratio_rescaled_vs_V0.", plotType))
+do.call(plotType, list(outFile, height=myHeightGG, width=myHeightGG))
+plot(
+ x =  all_auc_dt$auc_ratio_v0,
+ y =  all_auc_dt$auc_ratio_rescaled,
+ xlab  = "v0",
+ ylab="rescaled",
+ col = all_auc_dt$cmp,
+ pch=16,
+ main = paste0("Comp. FCC AUC ratio (PERMG2T)"),
+ cex.axis=plotCex,
+ cex.lab =plotCex,
+ cex.main=plotCex
+)
+
+addCorr( x =  all_auc_dt$auc_ratio_v0,
+         y =  all_auc_dt$auc_ratio_rescaled, bty="n", legPos = "bottomright")
 # 
+legend("topleft", col=all_cols, legend=names(all_cols), pch=16, bty="n")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
